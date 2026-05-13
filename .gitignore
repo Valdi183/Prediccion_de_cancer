@@ -1,12 +1,17 @@
-# Datos crudos
+# Datos crudos (nunca versionar datos de pacientes)
 Base de datos-20260512/
+data/raw/
 
 # Enunciado del caso
 cancer.pdf
 
-# Artefactos del modelo
+# Artefactos generados (binarios derivados de los datos)
+outputs/models/
+outputs/processed/
 *.keras
 *.h5
+*.pkl
+*.npy
 
 # Python
 __pycache__/
