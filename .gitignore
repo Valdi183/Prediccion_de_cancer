@@ -1,0 +1,14 @@
+# Datos crudos
+Base de datos-20260512/
+
+# Enunciado del caso
+cancer.pdf
+
+# Artefactos del modelo
+*.keras
+*.h5
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
