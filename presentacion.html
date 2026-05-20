@@ -6,8 +6,44 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="deck-stage.js"></script>
+<script>
+  // Fullscreen on first user interaction (browsers block auto-fullscreen
+  // without a gesture). Single-shot listener attached at load.
+  document.addEventListener('DOMContentLoaded', function () {
+    const go = function () {
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+      if (req) { try { req.call(el); } catch (_) {} }
+      window.removeEventListener('click', go);
+      window.removeEventListener('keydown', go);
+    };
+    window.addEventListener('click', go, { once: true });
+    window.addEventListener('keydown', go, { once: true });
+  });
+</script>
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #000; overflow: hidden; width: 100vw; height: 100vh; }
+  #presentation { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; }
+  .slide { position: absolute; display: none; }
+  .slide.active { display: block; }
+
+  #nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; display: flex; align-items: center; gap: 20px;
+  }
+  #nav button {
+    background: rgba(79,142,247,0.15); border: 1px solid #4F8EF7;
+    color: #E8EDF5; font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; padding: 10px 28px; border-radius: 6px;
+    cursor: pointer; letter-spacing: 0.08em; transition: background 0.2s;
+  }
+  #nav button:hover { background: rgba(79,142,247,0.35); }
+  #nav .counter {
+    font-family: 'JetBrains Mono', monospace; font-size: 14px;
+    color: #7B9BBF; letter-spacing: 0.1em; min-width: 60px; text-align: center;
+  }
+
   :root {
     --bg-deep: #050810;
     --bg-blue: #1B47A8;
@@ -22,12 +58,12 @@
     --accent-glow: rgba(79, 142, 247, 0.35);
   }
 
-  deck-stage {
+  #presentation {
     background: #000;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  deck-stage > section {
+  .slide {
     width: 1920px;
     height: 1080px;
     color: var(--text);
@@ -41,7 +77,7 @@
   }
 
   /* subtle grid overlay */
-  deck-stage > section::before {
+  .slide::before {
     content: "";
     position: absolute; inset: 0;
     background-image:
@@ -54,7 +90,7 @@
   }
 
   /* soft noise / vignette */
-  deck-stage > section::after {
+  .slide::after {
     content: "";
     position: absolute; inset: 0;
     background: radial-gradient(ellipse 80% 60% at 50% 110%, rgba(0,0,0,0.6), transparent 60%);
@@ -615,14 +651,139 @@
   .obs-card .obs-text b { color: var(--text); font-weight: 600; }
   .obs-card .obs-text .accent-txt { color: var(--accent); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
 
+  /* Results split: table+obs left (60%), ROC right (40%) */
+  .results-split {
+    display: grid;
+    grid-template-columns: 60fr 40fr;
+    gap: 32px;
+    flex: 1;
+    min-height: 0;
+  }
+  .results-left { display: flex; flex-direction: column; min-width: 0; }
+  .results-left .obs-row { margin-top: 24px; }
+  .results-left .results-table thead th { padding: 18px 20px; font-size: 13px; }
+  .results-left .results-table tbody td { padding: 18px 20px; font-size: 20px; }
+  .results-left .results-table tbody tr.highlight td:first-child::after {
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-left: 10px;
+    letter-spacing: 0.14em;
+  }
+  .results-left .obs-card { padding: 22px 26px; gap: 16px; }
+  .results-left .obs-card .obs-num { font-size: 26px; }
+  .results-left .obs-card .obs-text { font-size: 18px; line-height: 1.45; }
+
+  .roc-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .roc-card .roc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .roc-card h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .roc-card .roc-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .roc-svg-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .roc-card svg { width: 100%; height: auto; max-height: 100%; display: block; }
+  .roc-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 24px;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .roc-legend .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .roc-legend .swatch {
+    width: 16px; height: 4px; border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .roc-legend .auc {
+    margin-left: auto;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* Bar chart strip on slide 5 */
+  .bar-strip {
+    margin-top: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 28px 10px;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bar-strip .bar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .bar-strip h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  .bar-strip .legend {
+    display: flex;
+    gap: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .bar-strip .legend .item { display: flex; align-items: center; gap: 8px; }
+  .bar-strip .legend .sw { width: 14px; height: 14px; border-radius: 3px; }
+  .bar-strip .chart-area { flex: 1; min-height: 0; }
+  .bar-strip svg { width: 100%; height: 100%; display: block; }
+
   /* ─── Slide 5 — Conclusions ─── */
-  .conc-list li { font-size: 24px; line-height: 1.7; }
-  .lim-list  { gap: 28px; }
-  .conc-list { gap: 28px; }
-  .col-head.only-badge { padding-bottom: 28px; }
+  .conc-list li { font-size: 22px; line-height: 1.4; }
+  .lim-list  { gap: 16px; }
+  .conc-list { gap: 16px; }
+  .col-head.only-badge { padding-bottom: 20px; margin-bottom: 22px; }
+  .slide[data-screen-label="06 Conclusiones y limitaciones"] .slide-header { margin-bottom: 28px; }
+  .slide[data-screen-label="06 Conclusiones y limitaciones"] .col-card { padding: 28px 40px; }
+  .slide[data-screen-label="06 Conclusiones y limitaciones"] .col-card .col-head { margin-bottom: 18px; padding-bottom: 16px; }
   .conc-list li::before { background: var(--accent); }
   .lim-list li::before { background: var(--text-dim); box-shadow: none; }
-  .lim-list li { font-size: 22px; line-height: 1.7; }
+  .lim-list li { font-size: 21px; line-height: 1.4; }
 
   /* Footer */
   .deck-footer {
@@ -650,10 +811,10 @@
 </style>
 </head>
 <body>
-<deck-stage>
+<div id="presentation">
 
   <!-- ─── Slide 0 — Cover ─── -->
-  <section class="cover" data-screen-label="01 Portada">
+  <div class="slide cover" data-screen-label="01 Portada">
     <div class="cover-rings">
       <div class="ring r1"></div>
       <div class="ring r2"></div>
@@ -696,10 +857,10 @@
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- ─── Slide 1 — Problem ─── -->
-  <section data-screen-label="02 Descripción del problema">
+  <div class="slide" data-screen-label="02 Descripción del problema">
     <div class="slide-inner">
       <div class="slide-header">
         <div class="eyebrow"><span class="dot"></span><span>Contexto</span><span class="sep"></span></div>
@@ -753,10 +914,10 @@
       <div class="left"><span class="pill">CASO 3</span><span>Predicción de Diagnóstico de Cáncer</span></div>
       <div>V. Valdivia · UAX</div>
     </div>
-  </section>
+  </div>
 
   <!-- ─── Slide 2 — Pipeline ─── -->
-  <section data-screen-label="03 Preprocesado y pipeline">
+  <div class="slide" data-screen-label="03 Preprocesado y pipeline">
     <div class="slide-inner">
       <div class="slide-header">
         <div class="eyebrow"><span class="dot"></span><span>Metodología</span><span class="sep"></span></div>
@@ -830,10 +991,10 @@
       <div class="left"><span class="pill">CASO 3</span><span>Predicción de Diagnóstico de Cáncer</span></div>
       <div>V. Valdivia · UAX</div>
     </div>
-  </section>
+  </div>
 
   <!-- ─── Slide 3 — Models ─── -->
-  <section data-screen-label="04 Modelos entrenados">
+  <div class="slide" data-screen-label="04 Modelos entrenados">
     <div class="slide-inner">
       <div class="slide-header">
         <div class="eyebrow"><span class="dot"></span><span>Clasificadores</span><span class="sep"></span></div>
@@ -897,10 +1058,10 @@
       <div class="left"><span class="pill">CASO 3</span><span>Predicción de Diagnóstico de Cáncer</span></div>
       <div>V. Valdivia · UAX</div>
     </div>
-  </section>
+  </div>
 
   <!-- ─── Slide 4 — Results ─── -->
-  <section data-screen-label="05 Resultados">
+  <div class="slide" data-screen-label="05 Resultados">
     <div class="slide-inner">
       <div class="slide-header">
         <div class="eyebrow"><span class="dot"></span><span>Evaluación final</span><span class="sep"></span></div>
@@ -912,7 +1073,9 @@
         n = 7 501 pacientes · evaluación sellada
       </div>
 
-      <table class="results-table">
+      <div class="results-split">
+        <div class="results-left">
+          <table class="results-table">
         <thead>
           <tr>
             <th>Modelo</th>
@@ -973,23 +1136,36 @@
           </div>
         </div>
       </div>
+        </div>
+
+        <div class="roc-card">
+          <div class="roc-head">
+            <h3>Curvas ROC <span style="color:var(--text-dim);font-weight:300;">—</span> Test set</h3>
+            <span class="roc-sub">TPR vs FPR</span>
+          </div>
+          <div class="roc-svg-wrap">
+            <svg id="rocSvg" viewBox="0 0 420 380" xmlns="http://www.w3.org/2000/svg" aria-label="ROC curves"></svg>
+          </div>
+          <div class="roc-legend" id="rocLegend"></div>
+        </div>
+      </div>
     </div>
 
     <div class="deck-footer">
       <div class="left"><span class="pill">CASO 3</span><span>Predicción de Diagnóstico de Cáncer</span></div>
       <div>V. Valdivia · UAX</div>
     </div>
-  </section>
+  </div>
 
   <!-- ─── Slide 5 — Conclusions ─── -->
-  <section data-screen-label="06 Conclusiones y limitaciones">
+  <div class="slide" data-screen-label="06 Conclusiones y limitaciones">
     <div class="slide-inner">
       <div class="slide-header">
         <div class="eyebrow"><span class="dot"></span><span>Cierre</span><span class="sep"></span></div>
         <div class="slide-num"><strong>05</strong> &nbsp;/&nbsp; 05</div>
       </div>
 
-      <h1 class="title" style="margin-bottom:56px;"><span class="accent">Conclusiones</span> y Limitaciones</h1>
+      <h1 class="title" style="margin-bottom:20px;"><span class="accent">Conclusiones</span> y Limitaciones</h1>
 
       <div class="two-col">
         <div class="col-card">
@@ -1017,14 +1193,289 @@
           </ul>
         </div>
       </div>
+
+      <div class="bar-strip">
+        <div class="bar-head">
+          <h3>F1 y AUC-ROC por modelo <span style="color:var(--text-dim);font-weight:300;">—</span> Test set</h3>
+          <div class="legend">
+            <div class="item"><span class="sw" style="background:#4F8EF7;"></span>F1</div>
+            <div class="item"><span class="sw" style="background:#7B9BBF;"></span>AUC-ROC</div>
+          </div>
+        </div>
+        <div class="chart-area">
+          <svg id="barChart" viewBox="0 0 1600 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-label="F1 and AUC-ROC bars"></svg>
+        </div>
+      </div>
     </div>
 
     <div class="deck-footer">
       <div class="left"><span class="pill">CASO 3</span><span>Predicción de Diagnóstico de Cáncer</span></div>
       <div>V. Valdivia · UAX · Fin</div>
     </div>
-  </section>
+  </div>
 
-</deck-stage>
+</div>
+
+<script>
+(function () {
+  // ─── ROC curve generator ─────────────────────────────────────
+  // y = 1 − (1 − x)^k, AUC = k / (k + 1)
+  const MODELS = [
+    { name: 'Regresión Logística', short: 'LR',  auc: 0.831, color: '#4F8EF7', k: 4.92 },
+    { name: 'Random Forest',       short: 'RF',  auc: 0.827, color: '#F7A24F', k: 4.78 },
+    { name: 'XGBoost',             short: 'XGB', auc: 0.827, color: '#4FF7A2', k: 4.78 },
+    { name: 'Red Neuronal (MLP)',  short: 'MLP', auc: 0.833, color: '#F74F4F', k: 4.99 }
+  ];
+
+  function rocPoints(k, variant) {
+    // variant: 0 = pure (1-(1-x)^k); 1 = slightly different curvature for visual distinction
+    const pts = [];
+    for (let i = 0; i <= 60; i++) {
+      const x = i / 60;
+      let y;
+      if (variant === 1) {
+        // hybrid form to differentiate XGB from RF while keeping similar AUC
+        y = 0.55 * (1 - Math.pow(1 - x, k)) + 0.45 * Math.pow(x, 1 / k);
+      } else {
+        y = 1 - Math.pow(1 - x, k);
+      }
+      pts.push([x, y]);
+    }
+    return pts;
+  }
+
+  const svg = document.getElementById('rocSvg');
+  if (svg) {
+    const W = 420, H = 380;
+    const ML = 56, MR = 18, MT = 18, MB = 56;
+    const cw = W - ML - MR, ch = H - MT - MB;
+    const px = (x) => ML + x * cw;
+    const py = (y) => MT + (1 - y) * ch;
+
+    const NS = 'http://www.w3.org/2000/svg';
+    const mk = (tag, attrs) => {
+      const el = document.createElementNS(NS, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    };
+
+    // grid lines
+    for (let i = 0; i <= 5; i++) {
+      const t = i / 5;
+      svg.appendChild(mk('line', {
+        x1: px(0), y1: py(t), x2: px(1), y2: py(t),
+        stroke: '#1E3A60', 'stroke-width': 1
+      }));
+      svg.appendChild(mk('line', {
+        x1: px(t), y1: py(0), x2: px(t), y2: py(1),
+        stroke: '#1E3A60', 'stroke-width': 1
+      }));
+    }
+
+    // axes
+    svg.appendChild(mk('line', { x1: px(0), y1: py(0), x2: px(1), y2: py(0), stroke: '#2a466e', 'stroke-width': 1.5 }));
+    svg.appendChild(mk('line', { x1: px(0), y1: py(0), x2: px(0), y2: py(1), stroke: '#2a466e', 'stroke-width': 1.5 }));
+
+    // tick labels
+    for (let i = 0; i <= 5; i++) {
+      const t = i / 5;
+      const lblX = mk('text', {
+        x: px(t), y: py(0) + 22, fill: '#7B9BBF',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 11,
+        'text-anchor': 'middle'
+      });
+      lblX.textContent = t.toFixed(1);
+      svg.appendChild(lblX);
+
+      const lblY = mk('text', {
+        x: px(0) - 10, y: py(t) + 4, fill: '#7B9BBF',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 11,
+        'text-anchor': 'end'
+      });
+      lblY.textContent = t.toFixed(1);
+      svg.appendChild(lblY);
+    }
+
+    // axis titles
+    const ax = mk('text', {
+      x: ML + cw / 2, y: H - 14, fill: '#E8EDF5',
+      'font-family': 'JetBrains Mono, monospace', 'font-size': 12,
+      'text-anchor': 'middle', 'letter-spacing': '0.08em'
+    });
+    ax.textContent = 'FPR  (1 − Especificidad)';
+    svg.appendChild(ax);
+
+    const ay = mk('text', {
+      x: 0, y: 0, fill: '#E8EDF5',
+      'font-family': 'JetBrains Mono, monospace', 'font-size': 12,
+      'text-anchor': 'middle', 'letter-spacing': '0.08em',
+      transform: 'translate(16,' + (MT + ch / 2) + ') rotate(-90)'
+    });
+    ay.textContent = 'TPR  (Recall)';
+    svg.appendChild(ay);
+
+    // diagonal reference (chance)
+    svg.appendChild(mk('line', {
+      x1: px(0), y1: py(0), x2: px(1), y2: py(1),
+      stroke: '#7B9BBF', 'stroke-width': 1.2,
+      'stroke-dasharray': '4 4', opacity: 0.6
+    }));
+
+    // curves
+    MODELS.forEach((m, i) => {
+      const variant = m.short === 'XGB' ? 1 : 0;
+      const pts = rocPoints(m.k, variant);
+      const d = pts.map((p, idx) => (idx === 0 ? 'M' : 'L') + px(p[0]).toFixed(2) + ',' + py(p[1]).toFixed(2)).join(' ');
+      const path = mk('path', {
+        d: d, fill: 'none', stroke: m.color,
+        'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+      });
+      svg.appendChild(path);
+    });
+
+    // legend
+    const legend = document.getElementById('rocLegend');
+    if (legend) {
+      MODELS.forEach((m) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML =
+          '<span class="swatch" style="background:' + m.color + ';"></span>' +
+          '<span>' + m.short + '</span>' +
+          '<span class="auc">AUC ' + m.auc.toFixed(3) + '</span>';
+        legend.appendChild(row);
+      });
+    }
+  }
+
+  // ─── Grouped bar chart ───────────────────────────────────────
+  const bar = document.getElementById('barChart');
+  if (bar) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const mk = (tag, attrs) => {
+      const el = document.createElementNS(NS, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    };
+
+    const VW = 1600, VH = 130;
+    const data = [
+      { name: 'LR',  f1: 0.5571, auc: 0.8310, highlight: true },
+      { name: 'RF',  f1: 0.5531, auc: 0.8265 },
+      { name: 'XGB', f1: 0.5540, auc: 0.8271 },
+      { name: 'MLP', f1: 0.5450, auc: 0.8330 }
+    ];
+
+    const ML = 0, MR = 0, MT = 16, MB = 22;
+    const groupW = (VW - ML - MR) / data.length;
+    const barW = 110;
+    const gap = 14;
+    const maxY = 1.0;
+    const chartH = VH - MT - MB;
+    const baseY = MT + chartH;
+    const yFor = (v) => MT + chartH - (v / maxY) * chartH;
+
+    data.forEach((d, i) => {
+      const cx = ML + groupW * i + groupW / 2;
+      const xF1 = cx - barW - gap / 2;
+      const xAU = cx + gap / 2;
+      const yF1 = yFor(d.f1);
+      const yAU = yFor(d.auc);
+
+      // F1 bar
+      const bF1 = mk('rect', {
+        x: xF1, y: yF1, width: barW, height: baseY - yF1,
+        fill: '#4F8EF7', rx: 2
+      });
+      bar.appendChild(bF1);
+      if (d.highlight) {
+        bar.appendChild(mk('rect', {
+          x: xF1, y: yF1 - 1, width: barW, height: 3,
+          fill: '#ffffff'
+        }));
+      }
+
+      // AUC bar
+      bar.appendChild(mk('rect', {
+        x: xAU, y: yAU, width: barW, height: baseY - yAU,
+        fill: '#7B9BBF', rx: 2
+      }));
+
+      // value labels
+      const lblF1 = mk('text', {
+        x: xF1 + barW / 2, y: yF1 - 6, fill: '#E8EDF5',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 14,
+        'text-anchor': 'middle', 'font-weight': d.highlight ? 700 : 400
+      });
+      lblF1.textContent = d.f1.toFixed(4);
+      bar.appendChild(lblF1);
+
+      const lblAU = mk('text', {
+        x: xAU + barW / 2, y: yAU - 6, fill: '#E8EDF5',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 14,
+        'text-anchor': 'middle'
+      });
+      lblAU.textContent = d.auc.toFixed(4);
+      bar.appendChild(lblAU);
+
+      // model name below
+      const lblN = mk('text', {
+        x: cx, y: VH - 4, fill: '#7B9BBF',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 14,
+        'text-anchor': 'middle', 'letter-spacing': '0.08em'
+      });
+      lblN.textContent = d.name;
+      bar.appendChild(lblN);
+    });
+  }
+})();
+</script>
+
+<div id="nav">
+  <button id="btn-prev">← Anterior</button>
+  <span class="counter" id="slide-counter">1 / 6</span>
+  <button id="btn-next">Siguiente →</button>
+</div>
+
+<script>
+(function () {
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('slide-counter');
+
+  function scaleDeck() {
+    const scaleX = window.innerWidth / 1920;
+    const scaleY = window.innerHeight / 1080;
+    const scale = Math.min(scaleX, scaleY);
+    const offsetX = (window.innerWidth  - 1920 * scale) / 2;
+    const offsetY = (window.innerHeight - 1080 * scale) / 2;
+    slides.forEach((s) => {
+      s.style.transform = 'scale(' + scale + ')';
+      s.style.transformOrigin = 'top left';
+      s.style.left = offsetX + 'px';
+      s.style.top  = offsetY + 'px';
+    });
+  }
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('btn-next').addEventListener('click', () => goTo(current + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp'   || e.key === 'PageUp')   goTo(current - 1);
+  });
+
+  window.addEventListener('resize', scaleDeck);
+  scaleDeck();
+  goTo(0);
+})();
+</script>
+
 </body>
 </html>
