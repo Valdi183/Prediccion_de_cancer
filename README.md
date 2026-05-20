@@ -148,11 +148,6 @@ La separación máxima entre AUC-ROC es de 0.006 puntos, lo que indica que los c
 
 ---
 
-## Presentación
-
-[Ver diapositivas del proyecto](https://raw.githack.com/Valdi183/Prediccion_de_cancer/main/Prediccion_de_cancer/presentacion.html) — 6 diapositivas en HTML (portada + 5 secciones).
-
----
 
 ## Licencia
 
