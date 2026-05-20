@@ -148,4 +148,14 @@ La separación máxima entre AUC-ROC es de 0.006 puntos, lo que indica que los c
 
 ---
 
+## Presentación
+
+[Ver diapositivas del proyecto](presentacion.html) — 6 diapositivas en HTML (portada + 5 secciones).
+
+---
+
+## Licencia
+
+MIT License — Universidad Alfonso X el Sabio, 2025-2026.
+
 
